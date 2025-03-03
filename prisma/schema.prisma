@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TourCollection {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  gallery     Gallery[]
+  packages    TourPackage[]
+}
+
+model TourPackage {
+  id          Int      @id @default(autoincrement())
+  collectionId Int
+  document    String?
+  date        DateTime
+  description String?
+  duration    String
+  reviews     Review[]
+  guests      Int
+  priceAdult  Decimal
+  priceChild  Decimal
+  createdAt   DateTime @default(now())
+
+  collection  TourCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  gallery     Gallery[]
+  tourPlans   TourPlan[]
+}
+
+model TourPlan {
+  id          Int      @id @default(autoincrement())
+  tourId      Int
+  from        String
+  to          String
+  description String
+  stepOrder   Int
+  tour        TourPackage @relation(fields: [tourId], references: [id], onDelete: Cascade)
+}
+
+model Gallery {
+  id            Int      @id @default(autoincrement())
+  imageUrl      String
+  collectionId  Int?
+  packageId     Int?
+  collection    TourCollection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  package       TourPackage? @relation(fields: [packageId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id        Int     @id @default(autoincrement())
+  name      String
+  email     String  @unique
+  password  String
+  reviews   Review[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id            Int     @id @default(autoincrement())
+  tourPackageId Int
+  userId        Int
+  rating        Int
+  comment       String
+  createdAt     DateTime @default(now())
+  tourPackage   TourPackage @relation(fields: [tourPackageId], references: [id], onDelete: Cascade)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
