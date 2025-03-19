@@ -23,3 +23,7 @@ app.use("/api/gallery", gallery);
 app.use("/api/review/", reviewRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+app.get("/", (req, res) => {
+  res.send("Server is up and running");
+});
