@@ -1,5 +1,10 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const { uploadToAzure, uploadFileToBlob } = require("../util/azureBlob");
+const multer = require("multer");
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 exports.getAllTourPackages = async (req, res) => {
   try {
@@ -43,9 +48,8 @@ exports.getTourPackagesById = async (req, res) => {
 exports.createTourPackage = async (req, res) => {
   try {
     const {
+      name,
       collectionId,
-      gallery,
-      document,
       date,
       month,
       description,
@@ -53,27 +57,65 @@ exports.createTourPackage = async (req, res) => {
       guests,
       priceAdult,
       priceChild,
-      tourPlans,
+      tourPlans = "[]",
     } = req.body;
+
+    let parsedTourPlans;
+    try {
+      parsedTourPlans = JSON.parse(tourPlans);
+      if (!Array.isArray(parsedTourPlans)) {
+        throw new Error("tourPlans must be an array");
+      }
+    } catch (err) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid tourPlans format" });
+    }
+
+    const gallery = req.files["gallery"] || [];
+    const document = req.files["document"] || [];
+    let galleryUrls = [];
+    if (gallery && gallery.length > 0) {
+      galleryUrls = await Promise.all(
+        gallery.map(async (file) => {
+          return await uploadFileToBlob(
+            file.buffer,
+            file.originalname,
+            file.mimetype
+          );
+        })
+      );
+    }
+
+    let documentUrl = null;
+    if (document && document.length > 0) {
+      documentUrl = await uploadFileToBlob(
+        document[0].buffer,
+        document[0].originalname,
+        document[0].mimetype
+      );
+    }
 
     const newPackage = await prisma.tourPackage.create({
       data: {
-        collectionId,
-        document,
+        name,
+        collectionId: parseInt(collectionId),
+        document: documentUrl,
         date: new Date(date),
         month,
         description,
         duration,
-        guests,
-        priceAdult,
-        priceChild,
+        guests:parseInt(guests),
+        priceAdult:parseInt(priceAdult),
+        priceChild:parseInt(priceChild),
         gallery: {
-          create: gallery.map((image) => ({
-            imageUrl: image.imageUrl,
+          create: galleryUrls.map((imageUrl) => ({
+            imageUrl,
+            galleryType: "PACKAGE",
           })),
         },
         tourPlans: {
-          create: tourPlans.map((plan) => ({
+          create: parsedTourPlans.map((plan) => ({
             from: plan.from,
             to: plan.to,
             description: plan.description,
@@ -96,21 +138,9 @@ exports.createTourPackage = async (req, res) => {
 exports.updateTourPackage = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const existingPackage = await prisma.tourPackage.findUnique({
-      where: { id: parseInt(id) },
-      include: { tourPlans: true },
-    });
-
-    if (!existingPackage) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Package not found" });
-    }
-
     const {
+      name,
       collectionId,
-      document,
       date,
       month,
       description,
@@ -118,14 +148,43 @@ exports.updateTourPackage = async (req, res) => {
       guests,
       priceAdult,
       priceChild,
-      tourPlans,
+      tourPlans = "[]",
     } = req.body;
+
+    let parsedTourPlans;
+    try {
+      parsedTourPlans = JSON.parse(tourPlans);
+      if (!Array.isArray(parsedTourPlans)) {
+        throw new Error("tourPlans must be an array");
+      }
+    } catch (err) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid tourPlans format" });
+    }
+
+    const gallery = req.files["gallery"] || [];
+    let galleryUrls = [];
+    if (gallery.length > 0) {
+      galleryUrls = await Promise.all(
+        gallery.map(async (file) => {
+          return await uploadFileToBlob(
+            file.buffer,
+            file.originalname,
+            file.mimetype
+          );
+        })
+      );
+    }
+
+    await prisma.tourPlan.deleteMany({ where: { tourId: parseInt(id) } });
+    await prisma.gallery.deleteMany({ where: { packageId: parseInt(id) } });
 
     const updatedPackage = await prisma.tourPackage.update({
       where: { id: parseInt(id) },
       data: {
-        collectionId,
-        document,
+        name,
+        collectionId: parseInt(collectionId),
         date: new Date(date),
         month,
         description,
@@ -133,42 +192,26 @@ exports.updateTourPackage = async (req, res) => {
         guests,
         priceAdult,
         priceChild,
+        gallery: {
+          create: galleryUrls.map((imageUrl) => ({
+            imageUrl,
+            galleryType: "PACKAGE",
+            packageId: parseInt(id),
+          })),
+        },
         tourPlans: {
-          upsert: tourPlans.map((plan) => ({
-            where: { id: plan.id || 0 },
-            update: {
-              from: plan.from,
-              to: plan.to,
-              description: plan.description,
-              stepOrder: plan.stepOrder,
-            },
-            // create: {
-            //   from: plan.from,
-            //   to: plan.to,
-            //   description: plan.description,
-            //   stepOrder: plan.stepOrder,
-            // },
+          create: parsedTourPlans.map((plan) => ({
+            from: plan.from,
+            to: plan.to,
+            description: plan.description,
+            stepOrder: plan.stepOrder,
           })),
         },
       },
       include: { gallery: true, tourPlans: true },
     });
 
-    if (gallery && gallery.length > 0) {
-      await prisma.gallery.createMany({
-        data: gallery.map((image) => ({
-          imageUrl: image.imageUrl,
-          packageId: parseInt(id),
-        })),
-      });
-    }
-
-    const updatedPackageWithGallery = await prisma.tourPackage.findUnique({
-      where: { id: parseInt(id) },
-      include: { gallery: true },
-    });
-
-    res.json({ success: true, updatedPackageWithGallery });
+    res.json({ success: true, updatedPackage });
   } catch (error) {
     console.error(error);
     res
@@ -180,29 +223,9 @@ exports.updateTourPackage = async (req, res) => {
 exports.deleteTourPackage = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const existingPackage = await prisma.tourPackage.findUnique({
-      where: { id: parseInt(id) },
-    });
-
-    if (!existingPackage) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Package not found" });
-    }
-
-    await prisma.tourPlan.deleteMany({
-      where: { tourId: parseInt(id) },
-    });
-
-    await prisma.gallery.deleteMany({
-      where: { packageId: parseInt(id) },
-    });
-
-    await prisma.tourPackage.delete({
-      where: { id: parseInt(id) },
-    });
-
+    await prisma.tourPlan.deleteMany({ where: { tourId: parseInt(id) } });
+    await prisma.gallery.deleteMany({ where: { packageId: parseInt(id) } });
+    await prisma.tourPackage.delete({ where: { id: parseInt(id) } });
     res.json({ success: true, message: "Tour package deleted successfully" });
   } catch (error) {
     console.error(error);

@@ -24,6 +24,7 @@ model TourCollection {
 
 model TourPackage {
   id          Int      @id @default(autoincrement())
+  name        String?
   collectionId Int
   document    String?
   date        DateTime
@@ -54,10 +55,16 @@ model TourPlan {
 model Gallery {
   id            Int      @id @default(autoincrement())
   imageUrl      String
+  galleryType   GalleryType
   collectionId  Int?
   packageId     Int?
   collection    TourCollection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   package       TourPackage? @relation(fields: [packageId], references: [id], onDelete: Cascade)
+}
+
+enum GalleryType{
+  COLLECTION
+  PACKAGE
 }
 
 model User {

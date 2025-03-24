@@ -5,13 +5,14 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.js",
-    "migrate":"npx prisma generate"
+    "migrate": "npx prisma generate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@azure/storage-blob": "^12.27.0",
     "@prisma/client": "^6.4.1",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
@@ -20,6 +21,9 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "prisma": "^6.4.1"
+    "multer": "^1.4.5-lts.2",
+    "multer-azure-storage": "^0.2.0",
+    "prisma": "^6.4.1",
+    "uuid": "^11.1.0"
   }
 }

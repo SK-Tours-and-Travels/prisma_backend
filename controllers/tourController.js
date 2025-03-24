@@ -1,10 +1,19 @@
 const { PrismaClient } = require("@prisma/client");
+const util = require("util");
 const prisma = new PrismaClient();
+const { uploadToAzure } = require("../util/azureBlob");
+const multer = require("multer");
+
+const storage = multer.memoryStorage();
+const upload = multer().array("gallery", 10);
+const uploadAsync = util.promisify(upload);
 
 exports.getAllTourCollection = async (req, res) => {
   try {
+    await uploadAsync(req, res);
+
     const tours = await prisma.tourCollection.findMany({
-      include: { packages: true },
+      include: { packages: true,gallery:true },
     });
     res.json({ success: true, tours });
   } catch (error) {
@@ -19,84 +28,93 @@ exports.getTourCollectionById = async (req, res) => {
       where: { id: parseInt(id) },
       include: { packages: true, gallery: true },
     });
-    if (!collection)
+
+    if (!collection) {
       return res.status(404).json({ error: "Collection not found" });
+    }
+
     res.json({ success: true, collection });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, error: "Error fetching collection" });
+    res.status(500).json({ success: false, error: "Error fetching collection" });
   }
 };
 
 exports.createTourCollection = async (req, res) => {
   try {
-    const { name, description, gallery } = req.body;
+    console.log("Request Body:", req.body);
+    console.log("Uploaded Files:", req.files);
+
+    const { name, description } = req.body;
+    if (!name || !description) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Name and description are required" });
+    }
+
+    const gallery = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        console.log("Processing File:", file.originalname);
+        const imageUrl = await uploadToAzure(file);
+        gallery.push({ imageUrl,galleryType:"COLLECTION" });
+      }
+    }
+
     const newTour = await prisma.tourCollection.create({
       data: {
         name,
         description,
-        gallery: {
-          create: gallery.map((image) => ({
-            imageUrl: image.imageUrl,
-          })),
-        },
+        gallery: { create: gallery },
       },
       include: { gallery: true },
     });
-    res.status(201).json({ success: true, newTour });
+
+    return res.status(201).json({ success: true, newTour });
   } catch (error) {
-    res.status(500).json({ success: false, error: "Error creating tour" });
+    console.error("Tour Collection Creation Error:", error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
 exports.updateTourCollection = async (req, res) => {
   try {
+    await uploadAsync(req, res);
     const { id } = req.params;
-    const { name, description, gallery } = req.body;
+    const { name, description } = req.body;
 
     const existingTour = await prisma.tourCollection.findUnique({
       where: { id: parseInt(id) },
-w
+      include: { gallery: true },
     });
 
     if (!existingTour) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Collection not found" });
+      return res.status(404).json({ success: false, error: "Collection not found" });
+    }
+
+    if (req.files && req.files.length > 0) {
+      await prisma.gallery.deleteMany({
+        where: { collectionId: parseInt(id) },
+      });
+
+      const gallery = [];
+      for (const file of req.files) {
+        const imageUrl = await uploadToAzure(file);
+        gallery.push({ imageUrl, galleryType: "COLLECTION", collectionId: parseInt(id) });
+      }
+
+      await prisma.gallery.createMany({ data: gallery });
     }
 
     const updatedCollection = await prisma.tourCollection.update({
       where: { id: parseInt(id) },
       data: { name, description },
+      include: { gallery: true },
     });
 
-    if (gallery && gallery.length > 0) {
-      await prisma.gallery.createMany({
-        data: gallery.map((image) => ({
-          imageUrl: image.imageUrl,
-          collectionId: parseInt(id),
-        })),
-        skipDuplicates: true,
-      });
-    }
-
-    const updatedCollectionWithGallery = await prisma.tourCollection.findUnique(
-      {
-        where: { id: parseInt(id) },
-        include: { gallery: true },
-      }
-    );
-
-    res.json({
-      success: true,
-      updatedCollection: updatedCollectionWithGallery,
-    });
+    res.json({ success: true, updatedCollection });
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ success: false, error: "Error updating collection" });
+    console.error("Error updating collection:", error);
+    res.status(500).json({ success: false, error: "Error updating collection" });
   }
 };
 
@@ -109,18 +127,19 @@ exports.deleteTourCollection = async (req, res) => {
     });
 
     if (!existingTour) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Package not found" });
+      return res.status(404).json({ success: false, error: "Collection not found" });
     }
+
+    await prisma.gallery.deleteMany({
+      where: { collectionId: parseInt(id) },
+    });
 
     await prisma.tourCollection.delete({
       where: { id: parseInt(id) },
     });
+
     res.json({ success: true, message: "Collection deleted successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, error: "Error deleting collection" });
+    res.status(500).json({ success: false, error: "Error deleting collection" });
   }
 };
