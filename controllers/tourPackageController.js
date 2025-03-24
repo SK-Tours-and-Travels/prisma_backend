@@ -1,6 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const { uploadToAzure, uploadFileToBlob } = require("../util/azureBlob");
+const { uploadToAzure, uploadFileToBlob,deleteFileFromBlob } = require("../util/azureBlob");
 const multer = require("multer");
 
 const storage = multer.memoryStorage();
@@ -78,7 +78,7 @@ exports.createTourPackage = async (req, res) => {
     if (gallery && gallery.length > 0) {
       galleryUrls = await Promise.all(
         gallery.map(async (file) => {
-          return await uploadFileToBlob(
+          return await uploadToAzure(
             file.buffer,
             file.originalname,
             file.mimetype
@@ -168,7 +168,7 @@ exports.updateTourPackage = async (req, res) => {
     if (gallery.length > 0) {
       galleryUrls = await Promise.all(
         gallery.map(async (file) => {
-          return await uploadFileToBlob(
+          return await uploadToAzure(
             file.buffer,
             file.originalname,
             file.mimetype
@@ -220,17 +220,39 @@ exports.updateTourPackage = async (req, res) => {
   }
 };
 
+
 exports.deleteTourPackage = async (req, res) => {
   try {
     const { id } = req.params;
+
+    const images = await prisma.gallery.findMany({
+      where: { packageId: parseInt(id) },
+      select: { imageUrl: true },
+    });
+
+    const packageData = await prisma.tourPackage.findUnique({
+      where: { id: parseInt(id) },
+      select: { document: true },
+    });
+
+    const extractBlobName = (url) => url.split('/').pop();
+
+    for (let img of images) {
+      await deleteFileFromBlob(extractBlobName(img.imageUrl));
+    }
+
+    if (packageData?.document) {
+      await deleteFileFromBlob(extractBlobName(packageData.document));
+    }
+
     await prisma.tourPlan.deleteMany({ where: { tourId: parseInt(id) } });
     await prisma.gallery.deleteMany({ where: { packageId: parseInt(id) } });
     await prisma.tourPackage.delete({ where: { id: parseInt(id) } });
+
     res.json({ success: true, message: "Tour package deleted successfully" });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ success: false, error: "Error deleting tour package" });
+    res.status(500).json({ success: false, error: "Error deleting tour package" });
   }
 };
+

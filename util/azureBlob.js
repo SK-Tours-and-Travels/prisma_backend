@@ -32,4 +32,16 @@ const uploadFileToBlob = async (fileBuffer, fileName, fileType) => {
   }
 };
 
-module.exports = { uploadToAzure, uploadFileToBlob };
+const deleteFileFromBlob = async (blobName) => {
+  try {
+    const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
+    const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+    const blobClient = containerClient.getBlobClient(blobName);
+
+    await blobClient.deleteIfExists();
+    console.log(`Deleted: ${blobName}`);
+  } catch (error) {
+    console.error("Error deleting blob:", error);
+  }
+};
+module.exports = { uploadToAzure, uploadFileToBlob,deleteFileFromBlob };
