@@ -66,30 +66,31 @@ exports.createTourPackage = async (req, res) => {
       priceChild,
       tourPlans = "[]",
       destinations = "[]",
+      inclusions = "[]",
+      exclusions = "[]",
     } = req.body;
 
-    let parsedTourPlans;
-    let parsedDestinations;
-    try {
-      parsedTourPlans = JSON.parse(tourPlans);
-      if (!Array.isArray(parsedTourPlans)) {
-        throw new Error("tourPlans must be an array");
-      }
-    } catch (err) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Invalid tourPlans format" });
-    }
+    let parsedTourPlans, parsedDestinations, parsedInclusions, parsedExclusions;
 
     try {
+      parsedTourPlans = JSON.parse(tourPlans);
       parsedDestinations = JSON.parse(destinations);
-      if (!Array.isArray(parsedDestinations)) {
-        throw new Error("tourPlans must be an array");
+      parsedInclusions = JSON.parse(inclusions);
+      parsedExclusions = JSON.parse(exclusions);
+
+      if (
+        !Array.isArray(parsedTourPlans) ||
+        !Array.isArray(parsedDestinations) ||
+        !Array.isArray(parsedInclusions) ||
+        !Array.isArray(parsedExclusions)
+      ) {
+        throw new Error("All provided JSON fields must be arrays.");
       }
     } catch (err) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Invalid tourPlans format" });
+      return res.status(400).json({
+        success: false,
+        error: "Invalid JSON format in one or more fields.",
+      });
     }
 
     const gallery = req.files["gallery"] || [];
@@ -128,6 +129,8 @@ exports.createTourPackage = async (req, res) => {
         guests: parseInt(guests),
         priceAdult: parseInt(priceAdult),
         priceChild: parseInt(priceChild),
+        inclusions: parsedInclusions,
+        exclusions: parsedExclusions,
         gallery: {
           create: galleryUrls.map((imageUrl) => ({
             imageUrl,
@@ -175,30 +178,31 @@ exports.updateTourPackage = async (req, res) => {
       priceChild,
       tourPlans = "[]",
       destinations = "[]",
+      inclusions = "[]",
+      exclusions = "[]",
     } = req.body;
 
-    let parsedTourPlans;
-    let parsedDestinations;
-    try {
-      parsedTourPlans = JSON.parse(tourPlans);
-      if (!Array.isArray(parsedTourPlans)) {
-        throw new Error("tourPlans must be an array");
-      }
-    } catch (err) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Invalid tourPlans format" });
-    }
+    let parsedTourPlans, parsedDestinations, parsedInclusions, parsedExclusions;
 
     try {
+      parsedTourPlans = JSON.parse(tourPlans);
       parsedDestinations = JSON.parse(destinations);
-      if (!Array.isArray(parsedDestinations)) {
-        throw new Error("tourPlans must be an array");
+      parsedInclusions = JSON.parse(inclusions);
+      parsedExclusions = JSON.parse(exclusions);
+
+      if (
+        !Array.isArray(parsedTourPlans) ||
+        !Array.isArray(parsedDestinations) ||
+        !Array.isArray(parsedInclusions) ||
+        !Array.isArray(parsedExclusions)
+      ) {
+        throw new Error("All provided JSON fields must be arrays.");
       }
     } catch (err) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Invalid tourPlans format" });
+      return res.status(400).json({
+        success: false,
+        error: "Invalid JSON format in one or more fields.",
+      });
     }
 
     const gallery = req.files["gallery"] || [];
@@ -230,6 +234,8 @@ exports.updateTourPackage = async (req, res) => {
         guests,
         priceAdult,
         priceChild,
+        inclusions:parsedInclusions,
+        exclusions:parsedExclusions,
         gallery: {
           create: galleryUrls.map((imageUrl) => ({
             imageUrl,

@@ -35,6 +35,8 @@ model TourPackage {
   guests      Int
   priceAdult  Decimal
   priceChild  Decimal
+  inclusions  Json?
+  exclusions  Json?
   createdAt   DateTime @default(now())
 
   collection  TourCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
