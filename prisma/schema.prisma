@@ -40,6 +40,7 @@ model TourPackage {
   collection  TourCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   gallery     Gallery[]
   tourPlans   TourPlan[]
+  destinations TourDestination[]
 }
 
 model TourPlan {
@@ -86,4 +87,12 @@ model Review {
   createdAt     DateTime @default(now())
   tourPackage   TourPackage @relation(fields: [tourPackageId], references: [id], onDelete: Cascade)
   user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TourDestination{
+  id            Int       @id @default(autoincrement())
+  tourPackageId Int
+  name          String
+  createdAt     DateTime  @default(now())
+  tourPackage TourPackage @relation(fields:[tourPackageId],references:[id],onDelete:Cascade)
 }

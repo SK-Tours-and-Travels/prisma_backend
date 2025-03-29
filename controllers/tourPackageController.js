@@ -1,7 +1,12 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const { uploadToAzure, uploadFileToBlob,deleteFileFromBlob } = require("../util/azureBlob");
+const {
+  uploadToAzure,
+  uploadFileToBlob,
+  deleteFileFromBlob,
+} = require("../util/azureBlob");
 const multer = require("multer");
+const { parse } = require("dotenv");
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -14,6 +19,7 @@ exports.getAllTourPackages = async (req, res) => {
         tourPlans: true,
         gallery: true,
         reviews: true,
+        destinations: true,
       },
     });
     res.json({ success: true, packages });
@@ -32,6 +38,7 @@ exports.getTourPackagesById = async (req, res) => {
         tourPlans: true,
         gallery: true,
         reviews: true,
+        destinations: true,
       },
     });
     if (!packages) {
@@ -58,12 +65,25 @@ exports.createTourPackage = async (req, res) => {
       priceAdult,
       priceChild,
       tourPlans = "[]",
+      destinations = "[]",
     } = req.body;
 
     let parsedTourPlans;
+    let parsedDestinations;
     try {
       parsedTourPlans = JSON.parse(tourPlans);
       if (!Array.isArray(parsedTourPlans)) {
+        throw new Error("tourPlans must be an array");
+      }
+    } catch (err) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid tourPlans format" });
+    }
+
+    try {
+      parsedDestinations = JSON.parse(destinations);
+      if (!Array.isArray(parsedDestinations)) {
         throw new Error("tourPlans must be an array");
       }
     } catch (err) {
@@ -105,9 +125,9 @@ exports.createTourPackage = async (req, res) => {
         month,
         description,
         duration,
-        guests:parseInt(guests),
-        priceAdult:parseInt(priceAdult),
-        priceChild:parseInt(priceChild),
+        guests: parseInt(guests),
+        priceAdult: parseInt(priceAdult),
+        priceChild: parseInt(priceChild),
         gallery: {
           create: galleryUrls.map((imageUrl) => ({
             imageUrl,
@@ -122,8 +142,13 @@ exports.createTourPackage = async (req, res) => {
             stepOrder: plan.stepOrder,
           })),
         },
+        destinations: {
+          create: parsedDestinations.map((place) => ({
+            name: place.name,
+          })),
+        },
       },
-      include: { gallery: true, tourPlans: true },
+      include: { gallery: true, tourPlans: true, destinations: true },
     });
 
     res.status(201).json({ success: true, newPackage });
@@ -149,12 +174,25 @@ exports.updateTourPackage = async (req, res) => {
       priceAdult,
       priceChild,
       tourPlans = "[]",
+      destinations = "[]",
     } = req.body;
 
     let parsedTourPlans;
+    let parsedDestinations;
     try {
       parsedTourPlans = JSON.parse(tourPlans);
       if (!Array.isArray(parsedTourPlans)) {
+        throw new Error("tourPlans must be an array");
+      }
+    } catch (err) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Invalid tourPlans format" });
+    }
+
+    try {
+      parsedDestinations = JSON.parse(destinations);
+      if (!Array.isArray(parsedDestinations)) {
         throw new Error("tourPlans must be an array");
       }
     } catch (err) {
@@ -207,8 +245,13 @@ exports.updateTourPackage = async (req, res) => {
             stepOrder: plan.stepOrder,
           })),
         },
+        destinations: {
+          create: parsedDestinations.map((place) => ({
+            name: place.name,
+          })),
+        },
       },
-      include: { gallery: true, tourPlans: true },
+      include: { gallery: true, tourPlans: true, destinations: true },
     });
 
     res.json({ success: true, updatedPackage });
@@ -219,7 +262,6 @@ exports.updateTourPackage = async (req, res) => {
       .json({ success: false, error: "Error updating tour package" });
   }
 };
-
 
 exports.deleteTourPackage = async (req, res) => {
   try {
@@ -235,7 +277,7 @@ exports.deleteTourPackage = async (req, res) => {
       select: { document: true },
     });
 
-    const extractBlobName = (url) => url.split('/').pop();
+    const extractBlobName = (url) => url.split("/").pop();
 
     for (let img of images) {
       await deleteFileFromBlob(extractBlobName(img.imageUrl));
@@ -248,11 +290,14 @@ exports.deleteTourPackage = async (req, res) => {
     await prisma.tourPlan.deleteMany({ where: { tourId: parseInt(id) } });
     await prisma.gallery.deleteMany({ where: { packageId: parseInt(id) } });
     await prisma.tourPackage.delete({ where: { id: parseInt(id) } });
-
+    await prisma.tourDestination.deleteMany({
+      where: { tourPackageId: parseInt(id) },
+    });
     res.json({ success: true, message: "Tour package deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, error: "Error deleting tour package" });
+    res
+      .status(500)
+      .json({ success: false, error: "Error deleting tour package" });
   }
 };
-
