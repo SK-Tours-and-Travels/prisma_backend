@@ -24,6 +24,8 @@ CREATE TABLE "TourPackage" (
     "guests" INTEGER NOT NULL,
     "priceAdult" DECIMAL(65,30) NOT NULL,
     "priceChild" DECIMAL(65,30) NOT NULL,
+    "inclusions" JSONB,
+    "exclusions" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "TourPackage_pkey" PRIMARY KEY ("id")
