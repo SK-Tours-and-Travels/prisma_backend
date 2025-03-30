@@ -1,0 +1,24 @@
+import prisma from "../prismaClient.js";
+
+export const getStatistics = async (req, res) => {
+  try {
+    const collectionsCount = await prisma.collection.count();
+    const packagesCount = await prisma.package.count();
+    const usersCount = await prisma.user.count();
+
+    return res.json({
+      success: true,
+      data: {
+        collections: collectionsCount,
+        packages: packagesCount,
+        users: usersCount,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching statistics:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

@@ -14,6 +14,7 @@ const tourPlanRoutes = require("./routes/tourPlanRoutes");
 const gallery = require("./routes/galleryRoutes");
 const userRoutes = require("./routes/userRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
+const statRoutes = require("./routes/statRoutes");
 
 app.use("/api/user", userRoutes);
 app.use("/api/collections", tourRoutes);
@@ -21,6 +22,7 @@ app.use("/api/packages", tourPackageRoutes);
 app.use("/api/tourplan", tourPlanRoutes);
 app.use("/api/gallery", gallery);
 app.use("/api/review/", reviewRoutes);
+app.use("/api/stat/", statRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
