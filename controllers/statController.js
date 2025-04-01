@@ -6,6 +6,7 @@ exports.getStatistics = async (req, res) => {
     const collectionsCount = await prisma.tourCollection.count();
     const packagesCount = await prisma.tourPackage.count();
     const usersCount = await prisma.user.count();
+    const reviewCount = await prisma.review.count();
 
     return res.json({
       success: true,
@@ -13,6 +14,7 @@ exports.getStatistics = async (req, res) => {
         collections: collectionsCount,
         packages: packagesCount,
         users: usersCount,
+        reviews:reviewCount,
       },
     });
   } catch (error) {
