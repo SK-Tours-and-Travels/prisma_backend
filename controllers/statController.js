@@ -1,6 +1,7 @@
-import prisma from "../prismaClient.js";
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
-export const getStatistics = async (req, res) => {
+exports.getStatistics = async (req, res) => {
   try {
     const collectionsCount = await prisma.collection.count();
     const packagesCount = await prisma.package.count();
