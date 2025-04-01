@@ -3,8 +3,8 @@ const prisma = new PrismaClient();
 
 exports.getStatistics = async (req, res) => {
   try {
-    const collectionsCount = await prisma.collection.count();
-    const packagesCount = await prisma.package.count();
+    const collectionsCount = await prisma.tourCollection.count();
+    const packagesCount = await prisma.tourPackage.count();
     const usersCount = await prisma.user.count();
 
     return res.json({
