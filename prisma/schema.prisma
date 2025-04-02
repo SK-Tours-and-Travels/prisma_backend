@@ -28,7 +28,7 @@ model TourPackage {
   collectionId Int
   document    String?
   date        DateTime
-  month       String?
+  month       String[]
   description String?
   duration    String
   reviews     Review[]

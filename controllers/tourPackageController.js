@@ -108,6 +108,12 @@ exports.createTourPackage = async (req, res) => {
       );
     }
 
+    const destinationObjects = parsedDestinations.map((place) => {
+      return {
+        name: typeof place === 'string' ? place : (place.name || "Unnamed Destination")
+      };
+    });
+
     let documentUrl = null;
     if (document && document.length > 0) {
       documentUrl = await uploadFileToBlob(
@@ -146,9 +152,7 @@ exports.createTourPackage = async (req, res) => {
           })),
         },
         destinations: {
-          create: parsedDestinations.map((place) => ({
-            name: place.name,
-          })),
+          create: destinationObjects,
         },
       },
       include: { gallery: true, tourPlans: true, destinations: true },
@@ -219,8 +223,15 @@ exports.updateTourPackage = async (req, res) => {
       );
     }
 
+    const destinationObjects = parsedDestinations.map((place) => {
+      return {
+        name: typeof place === 'string' ? place : (place.name || "Unnamed Destination")
+      };
+    });
+
     await prisma.tourPlan.deleteMany({ where: { tourId: parseInt(id) } });
     await prisma.gallery.deleteMany({ where: { packageId: parseInt(id) } });
+    await prisma.tourDestination.deleteMany({ where: { tourPackageId: parseInt(id) } });
 
     const updatedPackage = await prisma.tourPackage.update({
       where: { id: parseInt(id) },
@@ -252,9 +263,7 @@ exports.updateTourPackage = async (req, res) => {
           })),
         },
         destinations: {
-          create: parsedDestinations.map((place) => ({
-            name: place.name,
-          })),
+          create: destinationObjects,
         },
       },
       include: { gallery: true, tourPlans: true, destinations: true },

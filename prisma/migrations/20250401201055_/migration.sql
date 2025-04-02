@@ -18,7 +18,7 @@ CREATE TABLE "TourPackage" (
     "collectionId" INTEGER NOT NULL,
     "document" TEXT,
     "date" TIMESTAMP(3) NOT NULL,
-    "month" TEXT,
+    "month" TEXT[],
     "description" TEXT,
     "duration" TEXT NOT NULL,
     "guests" INTEGER NOT NULL,
