@@ -1,7 +1,8 @@
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
+require("dotenv").config();
+const key_secret = process.env.KEY_SECRET;
 const prisma = new PrismaClient();
 
 exports.registerUser = async (req, res) => {
@@ -41,7 +42,7 @@ exports.loginUser = async (req, res) => {
         .status(401)
         .json({ success: false, error: "Invalid credentials" });
 
-    const token = jwt.sign({ userId: user.id }, "your_secret_key", {
+    const token = jwt.sign({ userId: user.id }, key_secret, {
       expiresIn: "7d",
     });
 
