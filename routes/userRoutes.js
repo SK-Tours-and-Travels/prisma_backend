@@ -1,5 +1,5 @@
 const express = require("express");
-const { registerUser, loginUser } = require("../controllers/userController");
+const { registerUser, loginUser,listUsers } = require("../controllers/userController");
 const {
   submitContactForm,
   getAllContacts,
@@ -9,6 +9,7 @@ const router = express.Router();
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+router.get("/list",listUsers);
 
 router.post("/sendmail", submitContactForm);
 router.get("/contact", getAllContacts);
