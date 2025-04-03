@@ -48,22 +48,40 @@ exports.getReviewsByTourPackageId = async (req, res) => {
 
 exports.createReview = async (req, res) => {
   try {
-    const { tourPackageId, rating, comment } = req.body;
-    const userId = req.user;
+    const { tourPackageId, userId, rating, comment } = req.body;
 
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({ error: "Rating must be between 1 and 5" });
+    if (!tourPackageId) {
+      return res.status(400).json({ success: false, error: "Tour package ID is required" });
     }
+    if (!userId) {
+      return res.status(400).json({ success: false, error: "User ID is required" });
+    }
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, error: "Rating must be between 1 and 5" });
+    }
+    const existingReview = await prisma.review.findFirst({
+      where: { tourPackageId: parseInt(tourPackageId), userId: parseInt(userId) },
+    });
 
+    if (existingReview) {
+      return res.status(400).json({ success: false, error: "You have already reviewed this tour package" });
+    }
     const newReview = await prisma.review.create({
-      data: { tourPackageId: parseInt(tourPackageId), userId, rating, comment },
+      data: {
+        tourPackageId: parseInt(tourPackageId),
+        userId: parseInt(userId),
+        rating,
+        comment: comment || "",
+      },
     });
 
     res.status(201).json({ success: true, newReview });
   } catch (error) {
+    console.error("Error creating review:", error.message);
     res.status(500).json({ success: false, error: "Error creating review" });
   }
 };
+
 
 exports.updateReview = async (req, res) => {
   try {
