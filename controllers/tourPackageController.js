@@ -6,10 +6,13 @@ const {
   deleteFileFromBlob,
 } = require("../util/azureBlob");
 const multer = require("multer");
-const { parse } = require("dotenv");
-
+const util = require("util");
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer().fields([
+  { name: "gallery", maxCount: 10 },
+  { name: "document", maxCount: 1 },
+]);
+const uploadAsync = util.promisify(upload);
 
 exports.getAllTourPackages = async (req, res) => {
   try {
@@ -93,35 +96,32 @@ exports.createTourPackage = async (req, res) => {
       });
     }
 
-    const gallery = req.files["gallery"] || [];
-    const document = req.files["document"] || [];
-    let galleryUrls = [];
-    if (gallery && gallery.length > 0) {
-      galleryUrls = await Promise.all(
-        gallery.map(async (file) => {
-          return await uploadToAzure(
-            file.buffer,
-            file.originalname,
-            file.mimetype
-          );
-        })
+    const galleryImages = [];
+    if (req.files.gallery && req.files.gallery.length > 0) {
+      for (const file of req.files.gallery) {
+        console.log("Processing Gallery File:", file.originalname);
+        const imageUrl = await uploadToAzure(file);
+        galleryImages.push({ imageUrl, galleryType: "PACKAGE" });
+      }
+    }
+
+    let documentUrl = null;
+    if (req.files.document && req.files.document.length > 0) {
+      console.log(
+        "Processing Document File:",
+        req.files.document[0].originalname
       );
+      documentUrl = await uploadToAzure(req.files.document[0]);
     }
 
     const destinationObjects = parsedDestinations.map((place) => {
       return {
-        name: typeof place === 'string' ? place : (place.name || "Unnamed Destination")
+        name:
+          typeof place === "string"
+            ? place
+            : place.name || "Unnamed Destination",
       };
     });
-
-    let documentUrl = null;
-    if (document && document.length > 0) {
-      documentUrl = await uploadFileToBlob(
-        document[0].buffer,
-        document[0].originalname,
-        document[0].mimetype
-      );
-    }
 
     const newPackage = await prisma.tourPackage.create({
       data: {
@@ -137,12 +137,7 @@ exports.createTourPackage = async (req, res) => {
         priceChild: parseInt(priceChild),
         inclusions: parsedInclusions,
         exclusions: parsedExclusions,
-        gallery: {
-          create: galleryUrls.map((imageUrl) => ({
-            imageUrl,
-            galleryType: "PACKAGE",
-          })),
-        },
+        gallery: { create: galleryImages },
         tourPlans: {
           create: parsedTourPlans.map((plan) => ({
             from: plan.from,
@@ -175,7 +170,6 @@ exports.updateTourPackage = async (req, res) => {
       collectionId,
       date,
       month,
-      document,
       description,
       duration,
       guests,
@@ -210,29 +204,60 @@ exports.updateTourPackage = async (req, res) => {
       });
     }
 
-    const gallery = req.files["gallery"] || [];
-    let galleryUrls = [];
-    if (gallery.length > 0) {
-      galleryUrls = await Promise.all(
-        gallery.map(async (file) => {
-          return await uploadToAzure(
-            file.buffer,
-            file.originalname,
-            file.mimetype
-          );
-        })
+    if (req.files.gallery && req.files.gallery.length > 0) {
+      const existingImages = await prisma.gallery.findMany({
+        where: { packageId: parseInt(id) },
+        select: { imageUrl: true },
+      });
+
+      const extractBlobName = (url) => url.split("/").pop();
+
+      for (let img of existingImages) {
+        await deleteFileFromBlob(extractBlobName(img.imageUrl));
+      }
+
+      await prisma.gallery.deleteMany({ where: { packageId: parseInt(id) } });
+
+      const galleryImages = [];
+      for (const file of req.files.gallery) {
+        console.log("Processing Gallery File:", file.originalname);
+        const imageUrl = await uploadToAzure(file);
+        galleryImages.push({
+          imageUrl,
+          galleryType: "PACKAGE",
+          packageId: parseInt(id),
+        });
+      }
+
+      await prisma.gallery.createMany({ data: galleryImages });
+    }
+
+    let documentUrl = existingPackage.document;
+    if (req.files.document && req.files.document.length > 0) {
+      if (existingPackage.document) {
+        const extractBlobName = (url) => url.split("/").pop();
+        await deleteFileFromBlob(extractBlobName(existingPackage.document));
+      }
+      console.log(
+        "Processing Document File:",
+        req.files.document[0].originalname
       );
+      documentUrl = await uploadToAzure(req.files.document[0]);
     }
 
     const destinationObjects = parsedDestinations.map((place) => {
       return {
-        name: typeof place === 'string' ? place : (place.name || "Unnamed Destination")
+        name:
+          typeof place === "string"
+            ? place
+            : place.name || "Unnamed Destination",
       };
     });
 
     await prisma.tourPlan.deleteMany({ where: { tourId: parseInt(id) } });
-    await prisma.gallery.deleteMany({ where: { packageId: parseInt(id) } });
-    await prisma.tourDestination.deleteMany({ where: { tourPackageId: parseInt(id) } });
+    await prisma.tourDestination.deleteMany({
+      where: { tourPackageId: parseInt(id) },
+    });
 
     const updatedPackage = await prisma.tourPackage.update({
       where: { id: parseInt(id) },
@@ -241,20 +266,14 @@ exports.updateTourPackage = async (req, res) => {
         collectionId: parseInt(collectionId),
         date: new Date(date),
         month,
-        document,
+        document:documentUrl,
         description,
         duration,
-        guests:parseInt(guests,10),
-        priceAdult:parseInt(priceAdult,10),
-        priceChild:parseInt(priceChild,10),
-        inclusions:parsedInclusions,
-        exclusions:parsedExclusions,
-        gallery: {
-          create: galleryUrls.map((imageUrl) => ({
-            imageUrl,
-            galleryType: "PACKAGE",
-          })),
-        },
+        guests: parseInt(guests, 10),
+        priceAdult: parseInt(priceAdult, 10),
+        priceChild: parseInt(priceChild, 10),
+        inclusions: parsedInclusions,
+        exclusions: parsedExclusions,
         tourPlans: {
           create: parsedTourPlans.map((plan) => ({
             from: plan.from,
@@ -317,4 +336,3 @@ exports.deleteTourPackage = async (req, res) => {
       .json({ success: false, error: "Error deleting tour package" });
   }
 };
- 
