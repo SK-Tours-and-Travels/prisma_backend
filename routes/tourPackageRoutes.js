@@ -1,5 +1,6 @@
 const express = require("express");
 const {
+  getTourPackagesByCollection,
   getAllTourPackages,
   getTourPackagesById,
   createTourPackage,
@@ -13,6 +14,7 @@ const upload = multer({ storage });
 
 router.get("/get/", getAllTourPackages);
 router.get("/get/:id", getTourPackagesById);
+router.get("/getbyCollection/:collectionName", getTourPackagesByCollection);
 router.post(
   "/create/",
   upload.fields([{ name: "gallery" }, { name: "document" }]),
