@@ -368,25 +368,25 @@ exports.getTourPackagesByCollection = async (req, res) => {
       where: {
         collectionId: collection.id,
       },
-      select: {
-        id: true,
-        name: true,
+      include: {
+        collection: true,
+        tourPlans: true,
+        gallery: true,
+        reviews: true,
+        destinations: true,
       },
     });
 
     res.json({
       success: true,
-      collection: {
-        id: collection.id,
-        name: collection.name,
-      },
-      packages: packages,
+      collection,
+      packages,
     });
   } catch (error) {
-    console.error("Error fetching package names by collection:", error);
+    console.error("Error fetching packages by collection:", error);
     res.status(500).json({
       success: false,
-      error: "Error fetching package names by collection",
+      error: "Error fetching packages by collection",
       message: error.message,
     });
   }
