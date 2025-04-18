@@ -266,7 +266,7 @@ exports.updateTourPackage = async (req, res) => {
         collectionId: parseInt(collectionId),
         date: new Date(date),
         month,
-        document:documentUrl,
+        document: documentUrl,
         description,
         duration,
         guests: parseInt(guests, 10),
@@ -334,5 +334,60 @@ exports.deleteTourPackage = async (req, res) => {
     res
       .status(500)
       .json({ success: false, error: "Error deleting tour package" });
+  }
+};
+
+exports.getTourPackagesByCollection = async (req, res) => {
+  try {
+    const { collectionName } = req.params;
+
+    if (!collectionName) {
+      return res.status(400).json({
+        success: false,
+        error: "Collection name is required",
+      });
+    }
+
+    const collection = await prisma.tourCollection.findFirst({
+      where: {
+        name: {
+          contains: collectionName,
+          mode: "insensitive",
+        },
+      },
+    });
+
+    if (!collection) {
+      return res.status(404).json({
+        success: false,
+        error: `Collection with name "${collectionName}" not found`,
+      });
+    }
+
+    const packages = await prisma.tourPackage.findMany({
+      where: {
+        collectionId: collection.id,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      collection: {
+        id: collection.id,
+        name: collection.name,
+      },
+      packages: packages,
+    });
+  } catch (error) {
+    console.error("Error fetching package names by collection:", error);
+    res.status(500).json({
+      success: false,
+      error: "Error fetching package names by collection",
+      message: error.message,
+    });
   }
 };
