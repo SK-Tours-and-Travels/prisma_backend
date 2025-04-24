@@ -4,7 +4,16 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://thankful-sand-0dfa67f00.6.azurestaticapps.net/",
+      "https://jolly-smoke-0f8c68a00.6.azurestaticapps.net",
+    ],
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(bodyParser.json());
 
