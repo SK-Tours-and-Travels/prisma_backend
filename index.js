@@ -9,8 +9,8 @@ app.use(
     origin: [
       "https://thankful-sand-0dfa67f00.6.azurestaticapps.net",
       "https://jolly-smoke-0f8c68a00.6.azurestaticapps.net",
-      "http://localhost:5000",
-      "http://localhost:3000",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:3000",
     ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
