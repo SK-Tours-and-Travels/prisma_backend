@@ -10,8 +10,7 @@ const uploadAsync = util.promisify(upload);
 
 exports.getAllTourCollection = async (req, res) => {
   try {
-    await uploadAsync(req, res);
-
+    // await uploadAsync(req, res);
     const tours = await prisma.tourCollection.findMany({
       include: { packages: true, gallery: true },
     });
