@@ -7,8 +7,8 @@ const app = express();
 app.use(
   cors({
     origin: [
-      "https://thankful-sand-0dfa67f00.6.azurestaticapps.net/",
-      "https://jolly-smoke-0f8c68a00.6.azurestaticapps.net",
+      "https://thankful-sand-0dfa67f00.6.azurestaticapps.net",
+      "https://thankful-sand-0dfa67f00.6.azurestaticapps.net/logout",
     ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
