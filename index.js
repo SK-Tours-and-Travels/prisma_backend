@@ -11,6 +11,7 @@ app.use(
       "https://jolly-smoke-0f8c68a00.6.azurestaticapps.net",
       "https://trippcard.in",
       "http://127.0.0.1:5173",
+      "http://localhost:5173",
       "http://127.0.0.1:3000",
     ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
