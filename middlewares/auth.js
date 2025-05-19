@@ -1,16 +1,22 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const key_secret = process.env.key_secret;
+const KEY_SECRET = process.env.KEY_SECRET;
 exports.protect = (req, res, next) => {
-  const token = req.header("Authorization");
+  const token =
+    req.header("Authorization")?.replace("Bearer ", "") ||
+    req.cookies?.token ||
+    req.query?.token;
 
-  if (!token) return res.status(401).json({ error: "No token, authorization denied" });
+  if (!token)
+    return res
+      .status(401)
+      .json({ success: false, error: "No token, authorization denied" });
 
   try {
-    const decoded = jwt.verify(token, key_secret);
+    const decoded = jwt.verify(token, KEY_SECRET);
     req.user = decoded.userId;
     next();
   } catch (error) {
-    res.status(401).json({ error: "Invalid token" });
+    res.status(401).json({ success: false, error: "Invalid token" });
   }
 };
