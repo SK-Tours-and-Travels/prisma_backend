@@ -232,6 +232,15 @@ exports.updateTourPackage = async (req, res) => {
       await prisma.gallery.createMany({ data: galleryImages });
     }
 
+    const existingPackage = await prisma.tourPackage.findUnique({
+      where: { id: parseInt(id) },
+      select: { document: true }
+    });
+    
+    if (!existingPackage) {
+      return res.status(404).json({ success: false, error: "Tour package not found" });
+    }
+
     let documentUrl = existingPackage.document;
     if (req.files.document && req.files.document.length > 0) {
       if (existingPackage.document) {
