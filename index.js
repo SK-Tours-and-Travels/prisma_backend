@@ -14,6 +14,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5174",
       "http://127.0.0.1:3000",
+      "https://admin.trippcard.in"
     ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
