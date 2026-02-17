@@ -5,11 +5,12 @@ const {
   getAllContacts,
   deleteContact,
 } = require("../controllers/mailerController");
+const {protect}  = require('../middlewares/auth')
 const router = express.Router();
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-router.get("/list",listUsers);
+router.get("/list",protect,listUsers);
 
 router.post("/sendmail", submitContactForm);
 router.get("/contact", getAllContacts);

@@ -137,16 +137,8 @@ exports.loginUser = async (req, res) => {
 
 exports.listUsers = async (req, res) => {
   try {
-    const requestingUser = await prisma.user.findUnique({
-      where: { id: req.user },
-      select:{id:true}
-    });
-
-    if (!requestingUser || requestingUser.role !== "ADMIN") {
-      return res.status(403).json({
-        success: false,
-        error: "Permission denied. Admin access required",
-      });
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const users = await prisma.user.findMany({
@@ -156,19 +148,16 @@ exports.listUsers = async (req, res) => {
         email: true,
         createdAt: true,
         updatedAt: true,
-        role: true,
       },
     });
 
     res.json({ success: true, users });
   } catch (error) {
     console.error("Error fetching users:", error);
-    res.status(500).json({
-      success: false,
-      error: "Server error when fetching users",
-    });
+    res.status(500).json({ error: "Server error" });
   }
 };
+
 
 exports.getProfile = async (req, res) => {
   try {
