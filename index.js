@@ -2,6 +2,13 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const tourRoutes = require("./routes/tourRoutes");
+const tourPackageRoutes = require("./routes/tourPackageRoutes");
+const tourPlanRoutes = require("./routes/tourPlanRoutes");
+const gallery = require("./routes/galleryRoutes");
+const userRoutes = require("./routes/userRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
+const statRoutes = require("./routes/statRoutes");
 
 const app = express();
 app.use(
@@ -14,22 +21,14 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5174",
       "http://127.0.0.1:3000",
-      "https://admin.trippcard.in"
+      "https://admin.trippcard.in",
     ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
-  })
+  }),
 );
 app.use(express.json());
 app.use(bodyParser.json());
-
-const tourRoutes = require("./routes/tourRoutes");
-const tourPackageRoutes = require("./routes/tourPackageRoutes");
-const tourPlanRoutes = require("./routes/tourPlanRoutes");
-const gallery = require("./routes/galleryRoutes");
-const userRoutes = require("./routes/userRoutes");
-const reviewRoutes = require("./routes/reviewRoutes");
-const statRoutes = require("./routes/statRoutes");
 
 app.use("/api/user", userRoutes);
 app.use("/api/collections", tourRoutes);
