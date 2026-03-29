@@ -14,8 +14,8 @@ const app = express();
 app.use(
   cors({
     origin: [
-      "https://black-meadow-041d99400.1.azurestaticapps.net",
-      "https://agreeable-pond-0b3746600.1.azurestaticapps.net",
+      "https://agreeable-dune-073a6cc10.4.azurestaticapps.net",
+      "https://purple-tree-07281eb10.1.azurestaticapps.net",
       "https://trippcard.in",
       "http://127.0.0.1:5173",
       "http://localhost:5173",
