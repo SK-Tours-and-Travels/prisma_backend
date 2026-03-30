@@ -43,6 +43,7 @@ model TourPackage {
   gallery     Gallery[]
   tourPlans   TourPlan[]
   destinations TourDestination[]
+  testimonials  Testimonial[]
 }
 
 model TourPlan {
@@ -56,18 +57,20 @@ model TourPlan {
 }
 
 model Gallery {
-  id            Int      @id @default(autoincrement())
-  imageUrl      String
-  galleryType   GalleryType
-  collectionId  Int?
-  packageId     Int?
-  collection    TourCollection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  package       TourPackage? @relation(fields: [packageId], references: [id], onDelete: Cascade)
-}
+  id             Int            @id @default(autoincrement())
+  imageUrl       String
+  galleryType    GalleryType
+  collectionId   Int?
+  packageId      Int?
+  // Moderation
+  isApproved     Boolean        @default(false)
+  // Customer submission metadata (null = uploaded by admin)
+  submittedBy    String?
+  submittedEmail String?
+  createdAt      DateTime       @default(now())
 
-enum GalleryType{
-  COLLECTION
-  PACKAGE
+  collection     TourCollection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  package        TourPackage?    @relation(fields: [packageId], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -76,6 +79,7 @@ model User {
   email     String  @unique
   password  String
   reviews   Review[]
+  testimonials  Testimonial[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -106,4 +110,26 @@ model Contact {
   phone     String?  
   message   String?
   createdAt DateTime @default(now())
+}
+
+enum GalleryType {
+  COLLECTION
+  PACKAGE
+}
+
+model Testimonial {
+  id            Int          @id @default(autoincrement())
+  name          String                         // customer name (always required)
+  email         String?                        // optional
+  message       String
+  rating        Int?                           // optional 1-5
+  imageUrl      String?                        // optional photo they upload
+  isApproved    Boolean      @default(false)   // admin must approve
+  // Relations (both optional — supports anonymous AND logged-in users)
+  tourPackageId Int?
+  userId        Int?
+  createdAt     DateTime     @default(now())
+
+  tourPackage   TourPackage? @relation(fields: [tourPackageId], references: [id], onDelete: SetNull)
+  user          User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
 }

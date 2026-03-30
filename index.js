@@ -9,7 +9,8 @@ const gallery = require("./routes/galleryRoutes");
 const userRoutes = require("./routes/userRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 const statRoutes = require("./routes/statRoutes");
-
+const customerRoutes = require("./routes/customerRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const app = express();
 app.use(
   cors({
@@ -22,7 +23,7 @@ app.use(
       "http://localhost:5174",
       "http://127.0.0.1:3000",
       "https://admin.trippcard.in",
-      "https://www.trippcard.in"
+      "https://www.trippcard.in",
     ],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
@@ -38,6 +39,9 @@ app.use("/api/tourplan", tourPlanRoutes);
 app.use("/api/gallery", gallery);
 app.use("/api/review/", reviewRoutes);
 app.use("/api/stat/", statRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/admin", adminRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
